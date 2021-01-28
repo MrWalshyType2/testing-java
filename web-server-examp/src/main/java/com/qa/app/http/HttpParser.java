@@ -29,12 +29,16 @@ public class HttpParser {
 		try {
 			parseRequestLine(reader, request);
 			parseHeaders(reader, request);
-			parseBody(reader, request);
+			
+			HashMap<String, String> headers = request.getHeaders();
+			if (headers.containsKey(HttpHeaders.STANDARD_REQUEST_CONTENT_LENGTH.HEADER_NAME) ||
+				headers.containsKey(HttpHeaders.STANDARD_REQUEST_TRANSFER_ENCODING.HEADER_NAME)) {
+				parseBody(reader, request);
+			}		
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 		return request;
 	}
 	
@@ -145,9 +149,15 @@ public class HttpParser {
 						 .get();
 	}
 
-	private void parseBody(InputStreamReader reader, HttpRequest request) {
-		// TODO Auto-generated method stub
+	private void parseBody(InputStreamReader reader, HttpRequest request) throws IOException {
+		BufferedReader bufferedReader = new BufferedReader(reader);
+		StringBuilder dataBuffer = new StringBuilder();
 		
+		int _byte;
+				
+		while ((_byte = bufferedReader.read()) >= 0) {
+			dataBuffer.append((char) _byte);
+		}
 	}
 
 }

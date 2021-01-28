@@ -13,6 +13,7 @@ public class HttpRequest extends HttpMessage {
 	 */
 	private String requestTarget;
 	private String httpVersion;
+	private String body;
 	
 	private HashMap<String, String> headers;
 
@@ -65,5 +66,17 @@ public class HttpRequest extends HttpMessage {
 	
 	void removeHeader(String key) {
 		headers.remove(key);
+	}
+
+	public String getBody() {
+		return body;
+	}
+
+	public void setBody(String body) {
+		this.body = body;
+	}
+
+	public void setMethod(HttpMethod method) {
+		this.method = method;
 	}
 }

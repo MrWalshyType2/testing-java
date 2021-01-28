@@ -2,6 +2,7 @@ package com.qa.app.http;
 
 public enum HttpStatusCode {
 
+	SUCCESS_200_OK(200, "Request OK"),
 	CLIENT_ERROR_400_BAD_REQUEST(400, "Bad Request"),
 	CLIENT_ERROR_401_METHOD_NOT_ALLOWED(401, "Method Not Allowed"),
 	CLIENT_ERROR_414_URI_TOO_LONG(400, "URI Too Long"),

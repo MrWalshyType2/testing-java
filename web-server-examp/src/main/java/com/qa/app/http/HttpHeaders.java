@@ -21,7 +21,9 @@ public enum HttpHeaders {
 	// User-Agent
 	STANDARD_REQUEST_USER_AGENT("User-Agent", "The user agent string of the user agent."),
 	// Accept-Encoding
-	STANDARD_REQUEST_ACCEPT_ENCODING("Accept-Encoding", "List of acceptable encodings");
+	STANDARD_REQUEST_ACCEPT_ENCODING("Accept-Encoding", "List of acceptable encodings"),
+	STANDARD_REQUEST_CONTENT_LENGTH("Content-Length", "The content-length of the request body"),
+	STANDARD_REQUEST_TRANSFER_ENCODING("Transfer-Encoding", "");
 	
 	public final String HEADER_NAME;
 	public final String DESCRIPTION;
