@@ -4,6 +4,10 @@ import java.util.HashMap;
 
 public abstract class HttpMessage {
 
+	/**
+	 * Start line for the request-line or status-line.
+	 */
+	protected String startLine;
 	protected HashMap<String, String> headers;
 	protected String body;
 	
@@ -11,6 +15,14 @@ public abstract class HttpMessage {
 		return headers;
 	}
 	
+	public String getStartLine() {
+		return startLine;
+	}
+
+	public void setStartLine(String startLine) {
+		this.startLine = startLine;
+	}
+
 	public void setHeaders(HashMap<String, String> headers) {
 		this.headers = headers;
 	}

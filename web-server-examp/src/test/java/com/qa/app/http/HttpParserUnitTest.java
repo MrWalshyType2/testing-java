@@ -44,7 +44,7 @@ public class HttpParserUnitTest {
 			HttpRequest request = httpParser.parseHttpRequest(generateBadGetTestCase());
 			fail();
 		} catch (HttpParsingException e) {
-			assertEquals(e.getErrorCode(), HttpStatusCode.SERVER_ERROR_501_NOT_IMPLEMENTED);
+			assertEquals(e.getErrorCode(), HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
 		}	
 	}
 	

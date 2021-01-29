@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.slf4j.Logger;
@@ -29,11 +31,12 @@ public class HttpParser {
 	public HttpRequest parseHttpRequest(InputStream in) throws HttpParsingException {
 		// reads bytes from a string and decodes to chars
 		InputStreamReader reader = new InputStreamReader(in, StandardCharsets.US_ASCII);
-
+		BufferedReader bufferedReader = new BufferedReader(reader);
+		
 		HttpRequest request = new HttpRequest();
 		try {
-			parseRequestLine(reader, request);
-			parseHeaders(reader, request);
+			parseRequestLine(bufferedReader, request);
+			parseHeaders(bufferedReader, request);
 			
 			HashMap<String, String> headers = request.getHeaders();
 			if (headers.containsKey(HttpHeaders.STANDARD_REQUEST_CONTENT_LENGTH.HEADER_NAME) ||
@@ -47,61 +50,75 @@ public class HttpParser {
 		return request;
 	}
 	
-	private void parseRequestLine(InputStreamReader reader, HttpRequest request) throws IOException, HttpParsingException {
-		StringBuilder dataBuffer = new StringBuilder();
+	private void parseRequestLine(BufferedReader reader, HttpRequest request) throws IOException, HttpParsingException {
+		StringBuilder reqLineBuffer = new StringBuilder();
 		int _byte;
 		
-		boolean methodParsed = false;
-		boolean requestTargetParsed = false;
-		
-		while ((_byte = reader.read()) >= 0) {
-			// if (this and the next byte == CRLF)
+		// loop through stream until first CRLF or error
+		while ((_byte = reader.read()) != -1) {
 			if (_byte == CR) {
-				_byte = reader.read();
-				
-				if (_byte == LF) {
-					LOGGER.debug("Request-line VERSION to Process : {}", dataBuffer.toString());
-					request.setHttpVersion(dataBuffer.toString());
-					
-					if (!methodParsed || !requestTargetParsed) {
-						throw new HttpParsingException(HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
-					}
-					
-					return;
+				if ((_byte = reader.read()) == LF) {
+					break;
 				}
+				throw new HttpParsingException(HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
 			}
-			
-			if (_byte == SP) {
-				// Process previous data
-				if (!methodParsed) {
-					LOGGER.debug("Request-line METHOD to Process : {}", dataBuffer.toString());
-					request.setMethod(dataBuffer.toString());
-					methodParsed = true;
-				} else if (!requestTargetParsed) {
-					LOGGER.debug("Request-line REQUEST TARGET to Process : {}", dataBuffer.toString());
-					request.setRequestTarget(dataBuffer.toString());
-					requestTargetParsed = true;
-				} else {
-					throw new HttpParsingException(HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
-				}
-				
-				dataBuffer.delete(0, dataBuffer.length());
-			} else {
-				dataBuffer.append((char) _byte);
-				
-				// if the method has not been parsed
-				if (!methodParsed) {
-					if (dataBuffer.length() > HttpMethod.MAX_LENGTH) {
-						throw new HttpParsingException(HttpStatusCode.SERVER_ERROR_501_NOT_IMPLEMENTED);
-					}
-				}
-			}
+			reqLineBuffer.append((char) _byte);
 		}
+		
+		// Quick check for invalid request-line (specifically whitespace at the start)
+		String requestLine = reqLineBuffer.toString();
+		if (requestLine == null 		||
+			requestLine.isEmpty()		||
+			requestLine.charAt(0) == SP ||
+			requestLine.split(" ").length > 3
+			) {
+			throw new HttpParsingException(HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
+		}
+
+		// Set the method, target, version, startLine with programmatic validation
+		request.setMethod(getMethod(requestLine));
+		request.setRequestTarget(getRequestTarget(requestLine));
+		request.setHttpVersion(getHttpVersion(requestLine));
+		request.setStartLine(requestLine);
+		LOGGER.debug("Parsed request-line: " + requestLine);
 	}
 	
-	private void parseHeaders(InputStreamReader reader, HttpRequest request) throws IOException, HttpParsingException {
+	private String getHttpVersion(String requestLine) {
+		// [2] = http version
+		List<String> requestLineList = Arrays.asList(requestLine.split(" "));
+		String version = requestLineList.get(2);
+		
+		return version;
+	}
+
+	private String getRequestTarget(String requestLine) {
+		// [1] = request target
+		List<String> requestLineList = Arrays.asList(requestLine.split(" "));
+		String target = requestLineList.get(1);
+		
+		return target;
+	}
+
+	private HttpMethod getMethod(String requestLine) throws HttpParsingException {		
+		// [0] = Method
+		List<String> requestLineList = Arrays.asList(requestLine.split(" "));
+		String method = requestLineList.get(0);
+		
+		if (method.length() > HttpMethod.MAX_LENGTH) throw new HttpParsingException(HttpStatusCode.SERVER_ERROR_501_NOT_IMPLEMENTED);
+		
+		for (HttpMethod httpMethod : HttpMethod.values()) {
+			if (method.equals(httpMethod.name().toString())) {
+				return httpMethod;
+			} else if (method.equalsIgnoreCase(httpMethod.name().toString())) {
+				throw new HttpParsingException(HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
+			}
+		}
+		throw new HttpParsingException(HttpStatusCode.SERVER_ERROR_501_NOT_IMPLEMENTED);
+	}
+
+	private void parseHeaders(BufferedReader bufferedReader, HttpRequest request) throws IOException, HttpParsingException {
 //		InputStream data = new BufferedInputStream(reader.);
-		BufferedReader bufferedReader = new BufferedReader(reader);
+//		BufferedReader bufferedReader = new BufferedReader(reader);
 		StringBuilder dataBuffer = new StringBuilder();
 		
 		int _byte;
@@ -163,6 +180,7 @@ public class HttpParser {
 		while ((_byte = bufferedReader.read()) >= 0) {
 			dataBuffer.append((char) _byte);
 		}
+		request.setBody(dataBuffer.toString());
 	}
 
 }
