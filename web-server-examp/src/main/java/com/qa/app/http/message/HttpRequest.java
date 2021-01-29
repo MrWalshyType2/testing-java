@@ -17,10 +17,7 @@ public class HttpRequest extends HttpMessage {
 	 */
 	private String requestTarget;
 	private String httpVersion;
-	private String body;
 	
-	private HashMap<String, String> headers;
-
 	HttpRequest() {
 		super();
 		headers = new HashMap<String, String>();
@@ -58,26 +55,6 @@ public class HttpRequest extends HttpMessage {
 	
 	public HashMap<String, String> getHeaders() {
 		return headers;
-	}
-
-	void setHeaders(HashMap<String, String> headers) {
-		this.headers = headers;
-	}
-	
-	void addHeader(String key, String value) {
-		headers.put(key, value);
-	}
-	
-	void removeHeader(String key) {
-		headers.remove(key);
-	}
-
-	public String getBody() {
-		return body;
-	}
-
-	public void setBody(String body) {
-		this.body = body;
 	}
 
 	public void setMethod(HttpMethod method) {

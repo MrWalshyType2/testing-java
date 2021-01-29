@@ -8,8 +8,6 @@ import com.qa.app.http.exception.HttpParsingException;
 public class HttpResponse extends HttpMessage {
 
 	private HttpStatusCode status;
-	private HashMap<String, String> headers;
-	private String body;
 	
 	public HttpStatusCode getStatus() {
 		return status;
@@ -26,22 +24,6 @@ public class HttpResponse extends HttpMessage {
 			}
 		}
 		throw new HttpParsingException(HttpStatusCode.SERVER_ERROR_501_NOT_IMPLEMENTED);
-	}
-	
-	public HashMap<String, String> getHeaders() {
-		return headers;
-	}
-	
-	public void setHeaders(HashMap<String, String> headers) {
-		this.headers = headers;
-	}
-	
-	public String getBody() {
-		return body;
-	}
-	
-	public void setBody(String body) {
-		this.body = body;
 	}
 	
 	public String build() {
