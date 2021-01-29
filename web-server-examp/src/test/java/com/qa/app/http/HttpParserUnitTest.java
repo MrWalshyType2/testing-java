@@ -98,8 +98,28 @@ public class HttpParserUnitTest {
 		}	
 	}
 	
+	@Test
+	void parseHttpRequestGetWithInvalidRequestTarget() {
+		try {
+			HttpRequest request = httpParser.parseHttpRequest(generateBadGetTestCaseWithInvalidRequestTarget());
+			fail();
+		} catch (HttpParsingException e) {
+			assertEquals(e.getErrorCode(), HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
+		}	
+	}
+
+	@Test
+	void parseHttpRequestGetWithInvalidHttpVersion() {
+		try {
+			HttpRequest request = httpParser.parseHttpRequest(generateBadGetTestCaseWithInvalidHttpVersion());
+			fail();
+		} catch (HttpParsingException e) {
+			assertEquals(e.getErrorCode(), HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
+		}	
+	}
+
 	private InputStream generateValidGetTestCase() {
-		String rawData = "GET /api/notes HTTP/1.1\r\n" + 
+		String rawData = "GET / HTTP/1.1\r\n" + 
 				"Host: localhost:8080\r\n" + 
 				"Connection: keep-alive\r\n" + 
 				"Upgrade-Insecure-Requests: 1\r\n" + 
@@ -203,8 +223,46 @@ public class HttpParserUnitTest {
 	}
 	
 	private InputStream generateValidGetTestCaseWithMalformedHeaders() {
-		String rawData = "GET /api/notes HTTP/1.1\r\n" + 
+		String rawData = "GET / HTTP/1.1\r\n" + 
 				" Host: localhost:8080\r\n" + 
+				"Connection: keep-alive\r\n" + 
+				"Upgrade-Insecure-Requests: 1\r\n" + 
+				"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36 Edg/88.0.705.50\r\n" + 
+				"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9\r\n" + 
+				"Sec-Fetch-Site: none\r\n" + 
+				"Sec-Fetch-Mode: navigate\r\n" + 
+				"Sec-Fetch-User: ?1\r\n" + 
+				"Sec-Fetch-Dest: document\r\n" + 
+				"Accept-Encoding: gzip, deflate, br\r\n" + 
+				"Accept-Language: en-GB,en;q=0.9,en-US;q=0.8\r\n\r\n";
+		
+		InputStream in = new ByteArrayInputStream(rawData.getBytes(
+												  StandardCharsets.US_ASCII));
+		return in;
+	}
+	
+	private InputStream generateBadGetTestCaseWithInvalidRequestTarget() {
+		String rawData = "GET /api/notes HTTP/1.1\r\n" + 
+				"Host: localhost:8080\r\n" + 
+				"Connection: keep-alive\r\n" + 
+				"Upgrade-Insecure-Requests: 1\r\n" + 
+				"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36 Edg/88.0.705.50\r\n" + 
+				"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9\r\n" + 
+				"Sec-Fetch-Site: none\r\n" + 
+				"Sec-Fetch-Mode: navigate\r\n" + 
+				"Sec-Fetch-User: ?1\r\n" + 
+				"Sec-Fetch-Dest: document\r\n" + 
+				"Accept-Encoding: gzip, deflate, br\r\n" + 
+				"Accept-Language: en-GB,en;q=0.9,en-US;q=0.8\r\n\r\n";
+		
+		InputStream in = new ByteArrayInputStream(rawData.getBytes(
+												  StandardCharsets.US_ASCII));
+		return in;
+	}
+	
+	private InputStream generateBadGetTestCaseWithInvalidHttpVersion() {
+		String rawData = "GET / HTTP/1.\r\n" + 
+				"Host: localhost:8080\r\n" + 
 				"Connection: keep-alive\r\n" + 
 				"Upgrade-Insecure-Requests: 1\r\n" + 
 				"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36 Edg/88.0.705.50\r\n" + 

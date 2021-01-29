@@ -2,10 +2,17 @@ package com.qa.app.http.message;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import com.qa.app.http.HttpHeaders;
 import com.qa.app.http.HttpMethod;
 import com.qa.app.http.HttpStatusCode;
+import com.qa.app.http.HttpVersion;
 import com.qa.app.http.exception.HttpParsingException;
 
 public class HttpParser {
@@ -51,6 +59,13 @@ public class HttpParser {
 	}
 	
 	private void parseRequestLine(BufferedReader reader, HttpRequest request) throws IOException, HttpParsingException {
+		// Quick check for invalid request-line (specifically whitespace at the start)
+		String requestLine = getRequestLine(reader);
+		validateRequestLine(requestLine, request);
+		LOGGER.debug("Parsed request-line: " + requestLine);
+	}
+	
+	private String getRequestLine(BufferedReader reader) throws HttpParsingException, IOException {
 		StringBuilder reqLineBuffer = new StringBuilder();
 		int _byte;
 		
@@ -64,9 +79,10 @@ public class HttpParser {
 			}
 			reqLineBuffer.append((char) _byte);
 		}
-		
-		// Quick check for invalid request-line (specifically whitespace at the start)
-		String requestLine = reqLineBuffer.toString();
+		return reqLineBuffer.toString();
+	}
+
+	private void validateRequestLine(String requestLine, HttpRequest request) throws HttpParsingException {
 		if (requestLine == null 		||
 			requestLine.isEmpty()		||
 			requestLine.charAt(0) == SP ||
@@ -80,21 +96,36 @@ public class HttpParser {
 		request.setRequestTarget(getRequestTarget(requestLine));
 		request.setHttpVersion(getHttpVersion(requestLine));
 		request.setStartLine(requestLine);
-		LOGGER.debug("Parsed request-line: " + requestLine);
 	}
-	
-	private String getHttpVersion(String requestLine) {
+
+	private String getHttpVersion(String requestLine) throws HttpParsingException {
 		// [2] = http version
 		List<String> requestLineList = Arrays.asList(requestLine.split(" "));
 		String version = requestLineList.get(2);
 		
+		if (!version.equals(HttpVersion.HTTP1DOT1.DESCRIPTION)) {
+			throw new HttpParsingException(HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
+		}
+		
 		return version;
 	}
 
-	private String getRequestTarget(String requestLine) {
-		// [1] = request target
-		List<String> requestLineList = Arrays.asList(requestLine.split(" "));
-		String target = requestLineList.get(1);
+	private String getRequestTarget(String requestLine) throws HttpParsingException {
+		String target = null;
+		try {
+			// [1] = request target
+			List<String> requestLineList = Arrays.asList(requestLine.split(" "));
+			target = requestLineList.get(1);
+			
+			if (target.equals("/")) {
+				target = "/Index";
+			}
+			// Throws IO if file doesn't exist
+			FileInputStream in = new FileInputStream("src/main/resources/views" + target + ".html");
+			in.close();
+		} catch (IOException e) {
+			throw new HttpParsingException(HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
+		}
 		
 		return target;
 	}
