@@ -9,6 +9,9 @@ import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.qa.app.http.handler.HttpMessageHandlerImpl;
+import com.qa.app.http.message.HttpParser;
+
 public class ServerListenerThread extends Thread {
 	
 	private final static Logger LOGGER = LoggerFactory.getLogger(ServerListenerThread.class);
@@ -38,7 +41,9 @@ public class ServerListenerThread extends Thread {
 				LOGGER.info("OPENING WORKER THREAD FOR CONNECTION " + socket.getInetAddress() +
 							" ON PORT " + socket.getPort() + 
 							" ON SOCKET WITH PORT " + socket.getLocalPort());
-				HttpConnectionWorkerThread workerThread = new HttpConnectionWorkerThread(socket);
+				HttpConnectionWorkerThread workerThread = new HttpConnectionWorkerThread(socket,
+																new HttpMessageHandlerImpl(
+																		new HttpParser()));
 				workerThread.start();
 			}
 			// serverSocket.close(); // TODO: HANDLE CLOSE

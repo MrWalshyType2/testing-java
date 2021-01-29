@@ -18,7 +18,7 @@ public class Runner {
 	
 	private final static Logger LOGGER = LoggerFactory.getLogger(Runner.class);
 
-	public static void main(String[] args) throws IOException, HttpConfigurationException {
+	public static void main(String[] args) throws IOException, HttpConfigurationException, InterruptedException {
 		
 		LOGGER.info("Server starting...");
 		
@@ -36,7 +36,9 @@ public class Runner {
 			ServerListenerThread serverListenerThread = 
 					new ServerListenerThread(configuration.getPort(),
 											 configuration.getViewsLocation());
+			//serverListenerThread.setDaemon(true);
 			serverListenerThread.start();
+			serverListenerThread.join();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

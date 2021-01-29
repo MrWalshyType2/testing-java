@@ -12,6 +12,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import com.qa.app.http.exception.HttpParsingException;
+import com.qa.app.http.message.HttpParser;
+import com.qa.app.http.message.HttpRequest;
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class HttpParserUnitTest {
 

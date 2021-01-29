@@ -9,17 +9,24 @@ import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.qa.app.http.HttpResponse;
 import com.qa.app.http.HttpStatusCode;
+import com.qa.app.http.exception.HttpParsingException;
+import com.qa.app.http.handler.HttpMessageHandler;
+import com.qa.app.http.message.HttpParser;
+import com.qa.app.http.message.HttpRequest;
+import com.qa.app.http.message.HttpResponse;
 
 public class HttpConnectionWorkerThread extends Thread {
 	
 	private final static Logger LOGGER = LoggerFactory.getLogger(HttpConnectionWorkerThread.class);
 	
 	private Socket socket;
+	private HttpMessageHandler<HttpRequest, HttpResponse> handler;
 
-	public HttpConnectionWorkerThread(Socket socket) {
+	public HttpConnectionWorkerThread(Socket socket, 
+									  HttpMessageHandler<HttpRequest, HttpResponse> handler) {
 		this.socket = socket;
+		this.handler = handler;
 	}
 	
 	@Override
@@ -32,31 +39,15 @@ public class HttpConnectionWorkerThread extends Thread {
 			
 			final String CRLF = "\r\n"; // 13, 10
 			
-			// Prepare response
-			String body = "<html><head><title>Simple HttpServer</title></head><body><h1>Page served</h1></body></html>";
-			int bodyLength = body.getBytes().length;
-			
-			HashMap<String, String> headers = new HashMap<String, String>();
-			headers.put("Content-Length", Integer.toString(bodyLength));
-			
-			HttpResponse response = new HttpResponse();
-			response.setStatus(HttpStatusCode.SUCCESS_200_OK);
-			response.setHeaders(headers);
-			response.setBody(body);
-			
-			
-			// Setup HTML page
-//			String response = 
-//					"HTTP/1.1 200 OK" + CRLF + // Status: HTTP_VERSION RESPONSE_CODE RESPONSE_MESSAGE
-//					"Content-Length: " + html.getBytes().length + CRLF + // HEADER
-//					CRLF +
-//					html + // BODY
-//					CRLF + CRLF;
+			HttpResponse response = handler.handle(in);
 			
 			// Write to output stream
 			out.write(response.build().getBytes());
 		} catch (IOException e) {
 			LOGGER.error("CONNECTION ERROR ENCOUNTERED", e);
+			e.printStackTrace();
+		} catch (HttpParsingException e) {
+			LOGGER.error("HTTP PARSING ERROR ENCOUNTERED", e);
 			e.printStackTrace();
 		} finally {
 			try {

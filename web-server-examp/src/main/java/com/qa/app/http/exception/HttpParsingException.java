@@ -1,4 +1,6 @@
-package com.qa.app.http;
+package com.qa.app.http.exception;
+
+import com.qa.app.http.HttpStatusCode;
 
 public class HttpParsingException extends Exception {
 

@@ -1,4 +1,4 @@
-package com.qa.app.http;
+package com.qa.app.http.message;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -11,6 +11,11 @@ import java.util.Map.Entry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.qa.app.http.HttpHeaders;
+import com.qa.app.http.HttpMethod;
+import com.qa.app.http.HttpStatusCode;
+import com.qa.app.http.exception.HttpParsingException;
 
 public class HttpParser {
 	
@@ -112,7 +117,7 @@ public class HttpParser {
 				if (_byte == LF) {
 					bufferedReader.mark(2);
 					if (bufferedReader.read() == CR && bufferedReader.read() == LF) {
-						bufferedReader.skip(dataBuffer.length());
+						//bufferedReader.skip(dataBuffer.length());
 						return;
 					}
 					bufferedReader.reset();

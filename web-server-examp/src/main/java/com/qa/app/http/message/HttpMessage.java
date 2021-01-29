@@ -1,4 +1,4 @@
-package com.qa.app.http;
+package com.qa.app.http.message;
 
 public abstract class HttpMessage {
 

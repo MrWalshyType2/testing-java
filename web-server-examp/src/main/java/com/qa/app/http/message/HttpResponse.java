@@ -1,6 +1,9 @@
-package com.qa.app.http;
+package com.qa.app.http.message;
 
 import java.util.HashMap;
+
+import com.qa.app.http.HttpStatusCode;
+import com.qa.app.http.exception.HttpParsingException;
 
 public class HttpResponse extends HttpMessage {
 
