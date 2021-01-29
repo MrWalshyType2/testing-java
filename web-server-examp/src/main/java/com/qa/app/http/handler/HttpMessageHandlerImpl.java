@@ -52,31 +52,38 @@ public class HttpMessageHandlerImpl implements HttpMessageHandler<HttpRequest, H
 		return response;
 	}
 
-	private String getViewContentsOrError(String requestTarget) throws HttpParsingException {
+	private String getViewContentsOrError(String requestTarget) {
+		FileInputStream in = null;
+		
 		try {
 			List<String> requestArgs = Arrays.asList(requestTarget.split("/"));
 			List<String> folders = null;
 			
-			if (requestTarget.isEmpty() || 
-				requestTarget.equalsIgnoreCase("/") ||
-				requestTarget.equalsIgnoreCase("/index")) {
-				requestTarget = "/Index";
-			}
+			requestTarget = parseRequestTarget(requestTarget);
 			
-			FileInputStream in = new FileInputStream("src/main/resources/views" + requestTarget + ".html");
+			in = new FileInputStream("src/main/resources/views" + requestTarget + ".html");
 			StringBuilder builder = new StringBuilder();
 			int _byte;
 			
 			while ((_byte = in.read()) != -1) {
 				builder.append((char) _byte);
 			}
+			in.close();
 			
 			return builder.toString();
 			
 		} catch (Exception e) {
 			return "<html><head><title>Page Not Found</title></head><body><h1>404 - Page Not Found</h1></body></html>";
-
 		}
+	}
+
+	private String parseRequestTarget(String requestTarget) {
+		if (requestTarget.isEmpty() || 
+				requestTarget.equalsIgnoreCase("/") ||
+				requestTarget.equalsIgnoreCase("/index")) {
+				return "/Index";
+		}
+		return requestTarget;
 	}
 
 

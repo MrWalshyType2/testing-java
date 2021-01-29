@@ -19,28 +19,7 @@ public class Runner {
 	private final static Logger LOGGER = LoggerFactory.getLogger(Runner.class);
 
 	public static void main(String[] args) throws IOException, HttpConfigurationException, InterruptedException {
-		
-		LOGGER.info("Server starting...");
-		
-		ConfigurationManager configurationManger = ConfigurationManager.getInstance();
-		Configuration configuration = null;
-		
-		// Load and get config file
-		configurationManger.loadConfigurationFile("src/main/resources/http.json");
-		configuration = configurationManger.getCurrentConfiguration();
-		
-		LOGGER.info("USING PORT: " + configuration.getPort());
-		LOGGER.info("USING VIEWS LOCATION: " + configuration.getViewsLocation());
-		
-		try {
-			ServerListenerThread serverListenerThread = 
-					new ServerListenerThread(configuration.getPort(),
-											 configuration.getViewsLocation());
-			//serverListenerThread.setDaemon(true);
-			serverListenerThread.start();
-			serverListenerThread.join();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		Server server = new Server();
+		server.run();
 	}
 }
