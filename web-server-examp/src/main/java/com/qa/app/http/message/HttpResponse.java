@@ -9,6 +9,24 @@ public class HttpResponse extends HttpMessage {
 
 	private HttpStatusCode status;
 	
+	public HttpResponse() {
+		
+	}
+	
+	public HttpResponse(HttpResponseBuilder builder) {
+		this.startLine = builder.startLine;
+		this.headers = builder.headers;
+		this.body = builder.body;
+		this.status = builder.status;
+	}
+	
+	public HttpResponse(String startLine, HashMap<String, String> headers, String body, HttpStatusCode status) {
+		this.startLine = startLine;
+		this.headers = headers;
+		this.body = body;
+		this.status = status;
+	}
+
 	public HttpStatusCode getStatus() {
 		return status;
 	}
@@ -46,5 +64,45 @@ public class HttpResponse extends HttpMessage {
 			response.append(CRLF);
 		}
 		return response.toString();
+	}
+	
+	public static class HttpResponseBuilder {
+		
+		private String startLine;
+		private HashMap<String, String> headers;
+		private String body;
+		private HttpStatusCode status;
+		
+		public static HttpResponseBuilder newBuilder() {
+			return new HttpResponseBuilder();
+		}
+		
+		private HttpResponseBuilder() {
+			
+		}
+		
+		public HttpResponseBuilder startLine(String startLine) {
+			this.startLine = startLine;
+			return this;
+		}
+		
+		public HttpResponseBuilder headers(HashMap<String, String> headers) {
+			this.headers = headers;
+			return this;
+		}
+		
+		public HttpResponseBuilder body(String body) {
+			this.body = body;
+			return this;
+		}
+		
+		public HttpResponseBuilder status(HttpStatusCode status) {
+			this.status = status;
+			return this;
+		}
+		
+		public HttpResponse build() {
+			return new HttpResponse(this);
+		}
 	}
 }

@@ -22,6 +22,25 @@ public class HttpRequest extends HttpMessage {
 		super();
 		headers = new HashMap<String, String>();
 	}
+	
+	HttpRequest(HttpRequestBuilder httpRequestBuilder) {
+		this.startLine = httpRequestBuilder.startLine;
+		this.headers = httpRequestBuilder.headers;
+		this.body = httpRequestBuilder.body;
+		this.method = httpRequestBuilder.method;
+		this.requestTarget = httpRequestBuilder.requestTarget;
+		this.httpVersion = httpRequestBuilder.httpVersion;
+		}
+
+	HttpRequest(String startLine, HashMap<String, String> headers, String body, HttpMethod method,
+			String requestTarget, String httpVersion) {
+		this.startLine = startLine;
+		this.headers = headers;
+		this.body = body;
+		this.method = method;
+		this.requestTarget = requestTarget;
+		this.httpVersion = httpVersion;
+	}
 
 	public HttpMethod getMethod() {
 		return method;
@@ -59,5 +78,57 @@ public class HttpRequest extends HttpMessage {
 
 	public void setMethod(HttpMethod method) {
 		this.method = method;
+	}
+	
+	public static class HttpRequestBuilder {
+		
+		private String startLine;
+		private HashMap<String, String> headers;
+		private String body;
+		private HttpMethod method;
+		private String requestTarget;
+		private String httpVersion;
+		
+		public static HttpRequestBuilder newBuilder() {
+			return new HttpRequestBuilder();
+		}
+		
+		private HttpRequestBuilder() {
+			
+		}
+		
+		public HttpRequestBuilder startLine(String startLine) {
+			this.startLine = startLine;
+			return this;
+		}
+		
+		public HttpRequestBuilder headers(HashMap<String, String> headers) {
+			this.headers = headers;
+			return this;
+		}
+		
+		public HttpRequestBuilder body(String body) {
+			this.body = body;
+			return this;
+		}
+		
+		public HttpRequestBuilder method(HttpMethod method) {
+			this.method = method;
+			return this;
+		}
+		
+		public HttpRequestBuilder requestTarget(String requestTarget) {
+			this.requestTarget = requestTarget;
+			return this;
+		}
+		
+		public HttpRequestBuilder httpVersion(String httpVersion) {
+			this.httpVersion = httpVersion;
+			return this;
+		}
+		
+		public HttpRequest build() {
+			return new HttpRequest(this);
+		}
 	}
 }

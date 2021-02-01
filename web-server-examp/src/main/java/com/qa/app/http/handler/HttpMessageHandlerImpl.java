@@ -11,13 +11,16 @@ import java.util.stream.Stream;
 import com.qa.app.http.HttpMethod;
 import com.qa.app.http.HttpStatusCode;
 import com.qa.app.http.exception.HttpParsingException;
+import com.qa.app.http.filter.FilterChain;
 import com.qa.app.http.message.HttpParser;
 import com.qa.app.http.message.HttpRequest;
 import com.qa.app.http.message.HttpResponse;
+import com.qa.app.http.message.HttpResponse.HttpResponseBuilder;
 
 public class HttpMessageHandlerImpl implements HttpMessageHandler<HttpRequest, HttpResponse> {
 	
 	private HttpParser parser;
+	private FilterChain filterChain;
 	
 	public HttpMessageHandlerImpl(HttpParser parser) {
 		this.parser = parser;
@@ -31,25 +34,24 @@ public class HttpMessageHandlerImpl implements HttpMessageHandler<HttpRequest, H
 
 	@Override
 	public HttpResponse handle(HttpRequest in) throws HttpParsingException {
-		// TODO: Logic
-		HttpResponse response = new HttpResponse();
+		HttpResponseBuilder response = HttpResponse.HttpResponseBuilder.newBuilder();
 		HashMap<String, String> headers = new HashMap<String, String>();
-		int bodyLength;
+		int bodyLength = 0;
+		String bodyContents = null;
 		
 		if (in.getMethod() == HttpMethod.GET) {
-			response.setBody(
-					getViewContentsOrError(in.getRequestTarget()));
+			bodyContents = getViewContentsOrError(in.getRequestTarget());
+			bodyLength = bodyContents.getBytes().length;
 		}
 		
-		if (!response.getBody().isEmpty()) {
-			bodyLength = response.getBody().getBytes().length;
+		if (bodyLength > 0 && !bodyContents.isEmpty()) {
 			headers.put("Content-Length", Integer.toString(bodyLength));
 		}
 		
-		response.setStatus(HttpStatusCode.SUCCESS_200_OK);
-		response.setHeaders(headers);
-		
-		return response;
+		response.status(HttpStatusCode.SUCCESS_200_OK);
+		response.headers(headers);
+		response.body(bodyContents);
+		return response.build();
 	}
 
 	private String getViewContentsOrError(String requestTarget) {

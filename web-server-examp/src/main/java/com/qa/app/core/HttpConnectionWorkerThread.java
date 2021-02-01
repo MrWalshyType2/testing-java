@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.qa.app.http.HttpStatusCode;
 import com.qa.app.http.exception.HttpParsingException;
+import com.qa.app.http.filter.FilterChain;
 import com.qa.app.http.handler.HttpMessageHandler;
 import com.qa.app.http.message.HttpParser;
 import com.qa.app.http.message.HttpRequest;
@@ -22,10 +23,12 @@ public class HttpConnectionWorkerThread extends Thread {
 	
 	private Socket socket;
 	private HttpMessageHandler<HttpRequest, HttpResponse> handler;
+	private FilterChain filterChain;
 
-	public HttpConnectionWorkerThread(Socket socket, 
+	public HttpConnectionWorkerThread(Socket socket, FilterChain filterChain,
 									  HttpMessageHandler<HttpRequest, HttpResponse> handler) {
 		this.socket = socket;
+		this.filterChain = filterChain;
 		this.handler = handler;
 	}
 	

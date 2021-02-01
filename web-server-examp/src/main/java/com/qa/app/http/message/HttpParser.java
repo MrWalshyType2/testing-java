@@ -26,6 +26,7 @@ import com.qa.app.http.HttpMethod;
 import com.qa.app.http.HttpStatusCode;
 import com.qa.app.http.HttpVersion;
 import com.qa.app.http.exception.HttpParsingException;
+import com.qa.app.http.message.HttpRequest.HttpRequestBuilder;
 
 public class HttpParser {
 	
@@ -40,29 +41,64 @@ public class HttpParser {
 		// reads bytes from a string and decodes to chars
 		InputStreamReader reader = new InputStreamReader(in, StandardCharsets.US_ASCII);
 		BufferedReader bufferedReader = new BufferedReader(reader);
+		HttpRequestBuilder httpRequestBuilder = HttpRequestBuilder.newBuilder();
 		
-		HttpRequest request = new HttpRequest();
 		try {
-			parseRequestLine(bufferedReader, request);
-			parseHeaders(bufferedReader, request);
+			String requestLine = parseRequestLine(bufferedReader);
+			HashMap<String, String> headers = parseHeaders(bufferedReader);
+			String body = null;
 			
-			HashMap<String, String> headers = request.getHeaders();
-			if (headers.containsKey(HttpHeaders.STANDARD_REQUEST_CONTENT_LENGTH.HEADER_NAME) ||
-				headers.containsKey(HttpHeaders.STANDARD_REQUEST_TRANSFER_ENCODING.HEADER_NAME)) {
-				parseBody(reader, request);
-			}		
+			if (headers.containsKey(
+							HttpHeaders.STANDARD_REQUEST_CONTENT_LENGTH.HEADER_NAME) ||
+				headers.containsKey(
+							HttpHeaders.STANDARD_REQUEST_TRANSFER_ENCODING.HEADER_NAME)) {
+					body = parseBody(reader);
+			}
+			
+			httpRequestBuilder.method(getMethod(requestLine))
+							  .requestTarget(getRequestTarget(requestLine))
+							  .httpVersion(getHttpVersion(requestLine))
+							  .startLine(requestLine)
+							  .headers(headers)
+							  .body(body);				
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return request;
+		return httpRequestBuilder.build();
 	}
 	
-	private void parseRequestLine(BufferedReader reader, HttpRequest request) throws IOException, HttpParsingException {
+	/**
+	 * <p>Takes a BufferedReader returning the request line. The BufferedReader
+	 * passed in will be used from its current location. </p>
+	 * 
+	 * <p><code>`validateRequestLine(String requestLine)`</code> is used to do some whitespace checks
+	 * on the request-line ensuring it complies with RFC 7230 Section 3.1.1: </p>
+	 * <ul><li>request-line   = method SP request-target SP HTTP-version CRLF</li></ul>
+	 * <code>
+	 * 	SP = SINGLE-SPACE // 32
+	 *  CR = CARRIAGE-RETURN // 13
+	 *  LF = LINE-FEED // 18
+	 * </code>
+	 * 
+	 * <p>Use the following methods to check for RFC compliance on the output from this method: </p>
+	 * <ul>
+	 * 	<li><code>getMethod(String requestLine)</code></li>
+	 *  <li><code>getRequestTarget(String requestLine)</code></li>
+	 *  <li><code>getHttpVersion(String requestLine)</code></li>
+	 * </ul>
+	 * 
+	 * @param reader
+	 * @return String - representing the request line to be further validated
+	 * @throws IOException
+	 * @throws HttpParsingException
+	 */
+	private String parseRequestLine(BufferedReader reader) throws IOException, HttpParsingException {
 		// Quick check for invalid request-line (specifically whitespace at the start)
 		String requestLine = getRequestLine(reader);
-		validateRequestLine(requestLine, request);
+		validateRequestLine(requestLine);
 		LOGGER.debug("Parsed request-line: " + requestLine);
+		return requestLine;
 	}
 	
 	private String getRequestLine(BufferedReader reader) throws HttpParsingException, IOException {
@@ -82,20 +118,15 @@ public class HttpParser {
 		return reqLineBuffer.toString();
 	}
 
-	private void validateRequestLine(String requestLine, HttpRequest request) throws HttpParsingException {
+	private void validateRequestLine(String requestLine) throws HttpParsingException {
 		if (requestLine == null 		||
 			requestLine.isEmpty()		||
 			requestLine.charAt(0) == SP ||
-			requestLine.split(" ").length > 3
+			requestLine.split(" ").length > 3 ||
+			requestLine.getBytes().length > 8000
 			) {
 			throw new HttpParsingException(HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
 		}
-
-		// Set the method, target, version, startLine with programmatic validation
-		request.setMethod(getMethod(requestLine));
-		request.setRequestTarget(getRequestTarget(requestLine));
-		request.setHttpVersion(getHttpVersion(requestLine));
-		request.setStartLine(requestLine);
 	}
 
 	private String getHttpVersion(String requestLine) throws HttpParsingException {
@@ -116,6 +147,12 @@ public class HttpParser {
 			// [1] = request target
 			List<String> requestLineList = Arrays.asList(requestLine.split(" "));
 			target = requestLineList.get(1);
+			
+			// RFC 7230, Section 3.1.1 'A server that receives a request-target longer
+			// than any URI it wishes to parse MUST response with a 414'. 
+			if (target.getBytes().length > 6000) {
+				throw new HttpParsingException(HttpStatusCode.CLIENT_ERROR_414_URI_TOO_LONG);
+			}
 			
 			if (target.equals("/")) {
 				target = "/Index";
@@ -147,17 +184,16 @@ public class HttpParser {
 		throw new HttpParsingException(HttpStatusCode.SERVER_ERROR_501_NOT_IMPLEMENTED);
 	}
 
-	private void parseHeaders(BufferedReader bufferedReader, HttpRequest request) throws IOException, HttpParsingException {
+	
+	private HashMap<String, String> parseHeaders(BufferedReader bufferedReader) throws IOException, HttpParsingException {
 //		InputStream data = new BufferedInputStream(reader.);
 //		BufferedReader bufferedReader = new BufferedReader(reader);
 		StringBuilder dataBuffer = new StringBuilder();
+		HashMap<String, String> headers = new HashMap<String, String>();
 		
 		int _byte;
-		
-		boolean headersParsed = false;
-		
+				
 		while ((_byte = bufferedReader.read()) >= 0) {
-			//if (_byte == SP) throw new HttpParsingException(HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
 			// CRLF check
 			if (_byte == CR) {
 				_byte = bufferedReader.read();
@@ -166,7 +202,7 @@ public class HttpParser {
 					bufferedReader.mark(2);
 					if (bufferedReader.read() == CR && bufferedReader.read() == LF) {
 						//bufferedReader.skip(dataBuffer.length());
-						return;
+						return headers;
 					}
 					bufferedReader.reset();
 					//bufferedReader.skip(dataBuffer.length());
@@ -176,17 +212,23 @@ public class HttpParser {
 					
 					LOGGER.debug("Parsed header: " + header.getKey().trim() + ":" + header.getValue());
 					
-					request.addHeader(header.getKey().trim(), header.getValue());
+					headers.put(header.getKey().trim(), header.getValue());
 				}
 			}
 
 			dataBuffer.append((char) _byte);
-		}
+		} // EO-While
+		throw new HttpParsingException(HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
 	}
 
 	private Entry<String, String> parseHeader(String string) throws HttpParsingException {		
 		// TODO: Some headers can have multiple values, allow for this
 		string = string.replaceFirst(":", ":SPLIT:");
+		
+		// A sender MUST NOT send whitespace between the start-line and the
+		// first header field. RFC 7230, Section 3. Either reject message or skip header.
+		// The header value can have optional leading or trailing whitespace
+		if (string.charAt(0) == SP) throw new HttpParsingException(HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
 		
 		String[] keyValue = string.split(":SPLIT:");
 		
@@ -202,7 +244,7 @@ public class HttpParser {
 						 .get();
 	}
 
-	private void parseBody(InputStreamReader reader, HttpRequest request) throws IOException {
+	private String parseBody(InputStreamReader reader) throws IOException {
 		BufferedReader bufferedReader = new BufferedReader(reader);
 		StringBuilder dataBuffer = new StringBuilder();
 		
@@ -211,7 +253,7 @@ public class HttpParser {
 		while ((_byte = bufferedReader.read()) >= 0) {
 			dataBuffer.append((char) _byte);
 		}
-		request.setBody(dataBuffer.toString());
+		return dataBuffer.toString();
 	}
 
 }
