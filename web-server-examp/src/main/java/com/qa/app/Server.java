@@ -10,6 +10,9 @@ import com.qa.app.configuration.ConfigurationManager;
 import com.qa.app.configuration.HttpConfigurationException;
 import com.qa.app.core.ServerListenerThread;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.core.util.StatusPrinter;
+
 public class Server implements Runnable {
 	
 	private final static Logger LOGGER = LoggerFactory.getLogger(Server.class);
@@ -18,6 +21,7 @@ public class Server implements Runnable {
 	private Configuration configuration;
 	private ServerListenerThread serverListenerThread;
 	private String configurationFileLocation;
+	private final String RESOURCE_DIR = "src/main/resources";
 	
 	public Server() {
 		super();
@@ -31,6 +35,9 @@ public class Server implements Runnable {
 	@Override
 	public void run() {
 		try {
+			LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
+			StatusPrinter.print(lc);
+			
 			LOGGER.info("Server starting...");
 			loadConfiguration();
 			
@@ -58,9 +65,11 @@ public class Server implements Runnable {
 		
 		// Load and get config file
 		if (configurationFileLocation == null || configurationFileLocation.isEmpty()) {
-			configurationManager.loadConfigurationFile("src/main/resources/http.json");
+			configurationManager.loadConfigurationFile(RESOURCE_DIR + "/http.json");
+			LOGGER.info("Loaded configuration from: " + RESOURCE_DIR + configurationFileLocation);
 		} else {
-			configurationManager.loadConfigurationFile(configurationFileLocation);
+			configurationManager.loadConfigurationFile(RESOURCE_DIR + configurationFileLocation);
+			LOGGER.info("Loaded configuration from: " + RESOURCE_DIR + configurationFileLocation);
 		}
 		
 		configuration = configurationManager.getCurrentConfiguration();

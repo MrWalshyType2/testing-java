@@ -1,5 +1,11 @@
 # Web Server Example
 
+## Logback
+### Specify config file as a sys prop
+```
+java -Dlogback.configurationFile=/src/main/resources/logback.xml com.qa.app.Runner
+```
+
 ## RFC
 - RFC 7230: (HTTP/1.1): Message Syntax and Routing
 - RFC 7231: (HTTP/1.1): Semantics and Content
